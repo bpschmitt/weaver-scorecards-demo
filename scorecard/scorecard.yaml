@@ -1,0 +1,61 @@
+# "Semantic Convention Conformance" scorecard, provisioned by terraform/ (newrelic_scorecard).
+#
+# Every rule is NRQL that returns one row per entity GUID with score 0 or 1.
+# Queries use {{SERVICES}}, which Terraform replaces with the demo's two service.name
+# values, so only checkout and legacy-cart are graded. Accounts come from var.account_id.
+name: Semantic Convention Conformance
+description: >
+  Does each OpenTelemetry service emit telemetry that matches the Acme registry?
+  Basic = identifiable and on the registry; Intermediate = no drift Weaver can see;
+  Advanced = nothing outside the registry.
+
+progress_levels:
+  - id: BASIC
+    name: Basic
+    description: Identifiable, owned, and built against the registry
+    color: "#9C5D00"
+  - id: INTERMEDIATE
+    name: Intermediate
+    description: Stable conventions and a clean live-check
+    color: "#0E7C7B"
+  - id: ADVANCED
+    name: Advanced
+    description: Emits only registry-defined telemetry
+    color: "#11845C"
+
+# run_interval is in minutes; the scorecard API accepts 60, 360, 720, or 1440.
+rules:
+  - name: Resource identity
+    description: Every span carries service.version, deployment.environment.name, and acme.team.
+    nrql_file: nrql/01_resource_identity.nrql
+    level: BASIC
+    weight: 5
+    run_interval: 60
+
+  - name: Registry adoption
+    description: Telemetry declares the Acme registry schema URL it was built against (acme.schema_url).
+    nrql_file: nrql/02_registry_adoption.nrql
+    level: BASIC
+    weight: 5
+    run_interval: 60
+
+  - name: Stable HTTP conventions
+    description: No pre-stable HTTP attributes (http.method, http.target, http.status_code).
+    nrql_file: nrql/03_stable_http_conventions.nrql
+    level: INTERMEDIATE
+    weight: 3
+    run_interval: 60
+
+  - name: Live-check clean
+    description: Zero Weaver live-check violations for the service in the last day.
+    nrql_file: nrql/04_live_check_clean.nrql
+    level: INTERMEDIATE
+    weight: 3
+    run_interval: 60
+
+  - name: Registry-only attributes
+    description: Zero missing_attribute findings, so every attribute emitted is defined in the registry.
+    nrql_file: nrql/05_registry_only_attributes.nrql
+    level: ADVANCED
+    weight: 1
+    run_interval: 60

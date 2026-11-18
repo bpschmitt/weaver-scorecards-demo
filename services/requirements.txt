@@ -1,0 +1,7 @@
+# OpenTelemetry Python core 1.45.x pairs with contrib 0.66bX (released Sept-Oct 2026).
+flask>=3.0,<4
+opentelemetry-api~=1.45.0
+opentelemetry-sdk~=1.45.0
+opentelemetry-exporter-otlp~=1.45.0
+opentelemetry-instrumentation-flask>=0.66b0,<0.67
+opentelemetry-instrumentation-logging>=0.66b0,<0.67

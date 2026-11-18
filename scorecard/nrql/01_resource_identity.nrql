@@ -1,0 +1,9 @@
+-- Basic: can we tell what this is, which build, and who owns it?
+-- New Relic copies resource attributes onto every span, so they're filterable here.
+SELECT if(filter(count(*), WHERE service.version IS NULL
+                          OR deployment.environment.name IS NULL
+                          OR acme.team IS NULL) = 0, 1, 0) AS 'score'
+FROM Span
+WHERE instrumentation.provider = 'opentelemetry' AND service.name IN ({{SERVICES}})
+FACET entity.guid AS 'entityGuid', service.name
+SINCE 1 day ago LIMIT MAX

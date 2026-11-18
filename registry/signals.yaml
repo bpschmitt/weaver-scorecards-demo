@@ -1,0 +1,49 @@
+# Signals owned by Acme, plus upstream signals we import.
+groups:
+  - id: span.acme.order.place
+    type: span
+    stability: stable
+    brief: Internal span covering validation, pricing, and persistence of a new order.
+    span_kind: internal
+    attributes:
+      - ref: acme.order.id
+        requirement_level: required
+      - ref: acme.order.item_count
+        requirement_level: required
+      - ref: acme.order.channel
+        requirement_level: recommended
+
+  # Log event: emitted through stdlib logging with extra={"otel.event.name": ...},
+  # which the OpenTelemetry logging handler promotes to the LogRecord EventName.
+  # Live-check matches log samples to this definition by event name.
+  - id: event.acme.order.placed
+    type: event
+    name: acme.order.placed
+    stability: development
+    brief: Emitted once an order has been accepted.
+    attributes:
+      - ref: acme.order.id
+        requirement_level: required
+      - ref: acme.order.channel
+        requirement_level: required
+      - ref: acme.payment.method
+        requirement_level: recommended
+
+  - id: metric.acme.order.value
+    type: metric
+    metric_name: acme.order.value
+    stability: development
+    brief: Monetary value of placed orders.
+    instrument: histogram
+    unit: "{USD}"
+    attributes:
+      - ref: acme.order.channel
+        requirement_level: required
+      - ref: acme.payment.method
+        requirement_level: recommended
+
+# Upstream metrics emitted by HTTP server instrumentation.
+imports:
+  metrics:
+    - http.server.request.duration
+    - http.server.active_requests

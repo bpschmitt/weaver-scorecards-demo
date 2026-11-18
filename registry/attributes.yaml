@@ -1,0 +1,123 @@
+# Attributes owned by Acme (registry.acme.* groups define ONLY acme.* attributes;
+# policies/registry/acme.rego enforces this), plus refs to the upstream OTel
+# attributes our services are expected to emit (acme.refs.* groups).
+#
+# Weaver only includes dependency attributes that are referenced here
+# (--include-unreferenced defaults to false), so anything a service emits from
+# upstream conventions must be listed in an acme.refs.* group or live-check
+# reports it as `missing_attribute`.
+groups:
+  # ---------------------------------------------------------------- acme-owned
+  - id: registry.acme.order
+    type: attribute_group
+    display_name: Acme Order Attributes
+    brief: Attributes describing an order handled by Acme services.
+    attributes:
+      - id: acme.order.id
+        type: string
+        stability: stable
+        brief: Opaque, non-guessable order identifier.
+        examples: ["ord_8f2c1a9b"]
+      - id: acme.order.item_count
+        type: int
+        stability: stable
+        brief: Number of line items in the order.
+        examples: [3]
+      - id: acme.order.channel
+        type:
+          members:
+            - id: web
+              value: "web"
+              brief: Placed through the web storefront.
+              stability: stable
+            - id: mobile
+              value: "mobile"
+              brief: Placed through a mobile app.
+              stability: stable
+            - id: partner
+              value: "partner"
+              brief: Placed by a partner integration.
+              stability: stable
+        stability: stable
+        brief: Channel the order was placed through.
+
+  - id: registry.acme.payment
+    type: attribute_group
+    display_name: Acme Payment Attributes
+    brief: Attributes describing how an order is paid.
+    attributes:
+      - id: acme.payment.method
+        type:
+          members:
+            - id: card
+              value: "card"
+              brief: Card payment.
+              stability: development
+            - id: wallet
+              value: "wallet"
+              brief: Digital wallet payment.
+              stability: development
+            - id: invoice
+              value: "invoice"
+              brief: Pay-by-invoice.
+              stability: development
+        stability: development
+        brief: Payment method selected by the customer.
+
+  - id: registry.acme.ownership
+    type: attribute_group
+    display_name: Acme Ownership Attributes
+    brief: Resource attributes that tie telemetry to an owner and a registry version.
+    attributes:
+      - id: acme.team
+        type: string
+        stability: stable
+        brief: Owning team slug; used to roll Scorecard results up by team.
+        examples: ["checkout-team"]
+      - id: acme.schema_url
+        type: string
+        stability: development
+        brief: Registry schema URL the service was built against.
+        note: >
+          Set by the service as a resource attribute from the generated
+          SCHEMA_URL constant. New Relic does not document mapping the OTLP
+          schema_url field, and the Collector's OTTL cannot read that field, so
+          the value travels as a normal attribute. Scorecards uses it for the
+          "Registry adoption" rule.
+        examples: ["https://telemetry.acme.example/schemas/1.0.0"]
+
+  # ------------------------------------------------- upstream refs (not owned)
+  - id: acme.refs.resource
+    type: attribute_group
+    display_name: Required Resource Attributes
+    brief: OpenTelemetry resource attributes every Acme service emits.
+    attributes:
+      - ref: service.name
+      - ref: service.version
+      - ref: service.instance.id
+      - ref: deployment.environment.name
+      - ref: telemetry.sdk.language
+      - ref: telemetry.sdk.name
+      - ref: telemetry.sdk.version
+
+  - id: acme.refs.http
+    type: attribute_group
+    display_name: HTTP Server Attributes
+    brief: >
+      Stable HTTP server attributes emitted by OpenTelemetry HTTP instrumentation
+      (Python requires OTEL_SEMCONV_STABILITY_OPT_IN=http to emit these instead
+      of the pre-stable http.method / http.target / http.status_code names).
+    attributes:
+      - ref: http.request.method
+      - ref: http.response.status_code
+      - ref: http.route
+      - ref: url.scheme
+      - ref: url.path
+      - ref: url.query
+      - ref: server.address
+      - ref: server.port
+      - ref: client.address
+      - ref: client.port
+      - ref: network.protocol.version
+      - ref: user_agent.original
+      - ref: error.type

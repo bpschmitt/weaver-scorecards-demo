@@ -1,0 +1,9 @@
+# Weaver live-check project config. Referenced by docker-compose.yaml (--config).
+# Schema: weaver registry json-schema --json-schema weaver-config
+
+# Acme attributes with `development` stability (e.g. acme.payment.method) would
+# otherwise raise not_stable advice. They are ours and intentional, so drop it.
+# Upstream OTel attributes still get not_stable advice.
+[[live-check.finding_filters]]
+exclude = ["not_stable"]
+sample_names = ["acme.*"]

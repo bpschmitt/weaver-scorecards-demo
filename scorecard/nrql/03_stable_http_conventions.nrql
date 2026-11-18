@@ -1,0 +1,11 @@
+-- Intermediate: pre-stable HTTP names break any dashboard or alert built on the
+-- stable ones (and vice versa). This needs no Weaver at all: New Relic can see
+-- the drift directly. Python emits the old names unless
+-- OTEL_SEMCONV_STABILITY_OPT_IN=http is set.
+SELECT if(filter(count(*), WHERE http.method IS NOT NULL
+                          OR http.target IS NOT NULL
+                          OR http.status_code IS NOT NULL) = 0, 1, 0) AS 'score'
+FROM Span
+WHERE instrumentation.provider = 'opentelemetry' AND service.name IN ({{SERVICES}})
+FACET entity.guid AS 'entityGuid', service.name
+SINCE 1 day ago LIMIT MAX

@@ -1,0 +1,23 @@
+# Weaver Forge config for `weaver registry generate ... python app/acme_semconv`.
+whitespace_control:
+  trim_blocks: true
+  lstrip_blocks: true
+
+params:
+  # Keep in sync with registry/manifest.yaml `schema_url`.
+  schema_url: "https://telemetry.acme.example/schemas/1.0.0"
+
+templates:
+  # Acme-owned attributes plus the upstream attributes we reference, one constant each.
+  - pattern: attributes.py.j2
+    filter: >
+      [.groups[]
+        | select((.id | startswith("registry.acme.")) or (.id | startswith("acme.refs.")))
+        | .attributes[]]
+      | unique_by(.name)
+    application_mode: single
+
+  # Every metric in the resolved registry (Acme-owned and imported upstream).
+  - pattern: metrics.py.j2
+    filter: '.groups | map(select(.type == "metric")) | sort_by(.metric_name)'
+    application_mode: single

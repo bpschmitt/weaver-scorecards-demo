@@ -1,0 +1,11 @@
+# Acme organization telemetry registry.
+#
+# Depends on a PINNED OpenTelemetry semantic conventions release and only adds
+# what upstream does not own (the acme.* namespace). Bump the dependency in a
+# reviewed PR; `weaver registry diff` will show what changed.
+name: acme
+description: Acme organization semantic conventions (demo registry)
+schema_url: https://telemetry.acme.example/schemas/1.0.0
+dependencies:
+  - schema_url: https://opentelemetry.io/schemas/1.45.0
+    registry_path: https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v1.45.0.zip[model]

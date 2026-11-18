@@ -1,0 +1,28 @@
+-- Run these in the New Relic query builder to confirm data before creating the scorecard.
+
+-- 1. Both services are reporting all three signals.
+SELECT count(*) FROM Span, Metric, Log
+WHERE service.name IN ('weaver-checkout', 'weaver-legacy-cart')
+FACET service.name, eventType() SINCE 30 minutes ago
+
+-- 2. Spans carry entity.guid and the resource attributes the rules read.
+SELECT latest(entity.guid), latest(service.version), latest(acme.team), latest(acme.schema_url), latest(http.method)
+FROM Span WHERE service.name IN ('weaver-checkout', 'weaver-legacy-cart')
+FACET service.name SINCE 30 minutes ago
+
+-- 3. Weaver findings arrived and were re-keyed to the source service
+--    (if service.name is 'weaver', the Collector re-key isn't working).
+SELECT count(*) FROM Log
+WHERE weaver.finding.id IS NOT NULL
+FACET service.name, weaver.finding.level, weaver.finding.id SINCE 30 minutes ago
+
+-- 4. Findings correlate to the service entity (rules 4 and 5 depend on this).
+SELECT uniques(entity.guid) FROM Log
+WHERE weaver.finding.id IS NOT NULL FACET service.name SINCE 30 minutes ago
+
+-- 5. Preview a rule before it's scheduled (rule 4 shown).
+SELECT if(filter(count(*), WHERE weaver.finding.level = 'violation') = 0, 1, 0) AS 'score'
+FROM Span, Log
+WHERE (instrumentation.provider = 'opentelemetry' OR weaver.finding.id IS NOT NULL)
+  AND service.name IN ('weaver-checkout', 'weaver-legacy-cart')
+FACET entity.guid AS 'entityGuid', service.name SINCE 1 day ago LIMIT MAX

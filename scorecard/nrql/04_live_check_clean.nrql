@@ -1,0 +1,15 @@
+-- Intermediate: zero Weaver violations.
+--
+-- Why FROM Span, Log: a clean service produces NO findings. Querying Log alone
+-- would return no row for it, and the Scorecard would show "not evaluated"
+-- rather than a pass. Including Span gives every reporting service a row, and
+-- the filter() counts only findings.
+--
+-- Relies on New Relic attaching entity.guid to the re-keyed finding logs
+-- (they carry service.name of the source service after the Collector re-key).
+SELECT if(filter(count(*), WHERE weaver.finding.level = 'violation') = 0, 1, 0) AS 'score'
+FROM Span, Log
+WHERE (instrumentation.provider = 'opentelemetry' OR weaver.finding.id IS NOT NULL)
+  AND service.name IN ({{SERVICES}})
+FACET entity.guid AS 'entityGuid', service.name
+SINCE 1 day ago LIMIT MAX

@@ -1,0 +1,9 @@
+-- Basic: closes Weaver's blind spot. This grades EVERY OpenTelemetry service
+-- reporting to the account, including ones nobody wired into the registry.
+-- Tighten the pattern to "current or previous release" once you version the registry.
+SELECT if(filter(count(*), WHERE acme.schema_url IS NULL
+                          OR acme.schema_url NOT LIKE 'https://telemetry.acme.example/schemas/%') = 0, 1, 0) AS 'score'
+FROM Span
+WHERE instrumentation.provider = 'opentelemetry' AND service.name IN ({{SERVICES}})
+FACET entity.guid AS 'entityGuid', service.name
+SINCE 1 day ago LIMIT MAX

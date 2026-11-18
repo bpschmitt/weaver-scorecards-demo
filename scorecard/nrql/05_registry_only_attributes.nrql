@@ -1,0 +1,8 @@
+-- Advanced: nothing emitted outside the registry. missing_attribute means an
+-- attribute name isn't defined (or referenced) in registry/.
+SELECT if(filter(count(*), WHERE weaver.finding.id = 'missing_attribute') = 0, 1, 0) AS 'score'
+FROM Span, Log
+WHERE (instrumentation.provider = 'opentelemetry' OR weaver.finding.id IS NOT NULL)
+  AND service.name IN ({{SERVICES}})
+FACET entity.guid AS 'entityGuid', service.name
+SINCE 1 day ago LIMIT MAX

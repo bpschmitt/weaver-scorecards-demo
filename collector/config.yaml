@@ -1,0 +1,85 @@
+# OpenTelemetry Collector (contrib) for the demo. Numbered comments match the
+# Reference Architecture "OpenTelemetry + New Relic" workflow steps.
+#
+#   apps --OTLP--> [otlp] --> New Relic                       (6)
+#                         \-> Weaver live-check (sampled tap) (staging gate)
+#   Weaver findings --> [otlp/findings] --> re-key --> New Relic  (4)
+#
+# Findings arrive on their OWN receiver and are never routed back to Weaver,
+# so the feedback loop the Weaver docs warn about can't happen.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  otlp/findings:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:14317
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch: {}
+
+  # Live-check checks every sample it receives. In a real staging environment
+  # send it a slice, not everything. 100% here so the demo shows results fast.
+  probabilistic_sampler/weaver:
+    sampling_percentage: 100
+
+  # (4) A finding names its source service in a LOG attribute, while its
+  # RESOURCE says service.name=weaver. Group findings by source service, then
+  # promote that value to service.name so New Relic attaches each finding to
+  # the right service entity instead of one "weaver" entity.
+  groupbyattrs/findings:
+    keys:
+      - weaver.finding.resource.attribute.service.name
+  transform/findings:
+    error_mode: ignore
+    log_statements:
+      - set(resource.attributes["service.name"], resource.attributes["weaver.finding.resource.attribute.service.name"]) where resource.attributes["weaver.finding.resource.attribute.service.name"] != nil
+      - set(resource.attributes["acme.gate"], "staging")
+
+exporters:
+  otlp_http/newrelic:
+    endpoint: ${env:NEW_RELIC_OTLP_ENDPOINT}
+    headers:
+      api-key: ${env:NEW_RELIC_LICENSE_KEY}
+  otlp_grpc/weaver:
+    endpoint: weaver:4317
+    tls:
+      insecure: true        # live-check listens without TLS
+    compression: none       # live-check does not accept gzip
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    # (5)(6) Application telemetry: to New Relic, and a tap to live-check.
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/newrelic]
+    traces/weaver:
+      receivers: [otlp]
+      processors: [memory_limiter, probabilistic_sampler/weaver, batch]
+      exporters: [otlp_grpc/weaver]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/newrelic, otlp_grpc/weaver]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/newrelic, otlp_grpc/weaver]
+
+    # (4) Weaver findings: re-key, then to New Relic only.
+    logs/findings:
+      receivers: [otlp/findings]
+      processors: [memory_limiter, groupbyattrs/findings, transform/findings, batch]
+      exporters: [otlp_http/newrelic, debug]
