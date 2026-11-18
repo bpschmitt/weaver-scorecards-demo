@@ -7,3 +7,10 @@
 [[live-check.finding_filters]]
 exclude = ["not_stable"]
 sample_names = ["acme.*"]
+
+# The Flask/HTTP instrumentation emits http.server.active_requests, an upstream
+# metric still at `development` stability. Nothing a service owner can fix, and it
+# would fail fail_on=improvement for the conformant checkout service.
+[[live-check.finding_filters]]
+exclude = ["not_stable"]
+sample_names = ["http.server.active_requests"]
