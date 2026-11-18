@@ -131,15 +131,21 @@ jobs:
           echo "live-check exit code: $status"
           echo "$status" > live-check.status
 
-      - name: Summary
+      # Shows what Weaver is suggesting: every distinct violation and improvement,
+      # as a job-log list, annotations, and a table in the job summary.
+      - name: Weaver findings
         if: always()
         run: |
+          python .github/scripts/live_check_findings.py live-check-report \
+            "${{ matrix.service }}" "$FAIL_ON" "$(cat live-check.status 2>/dev/null || echo n/a)"
           {
-            echo "### Live-check: ${{ matrix.service }} (fail_on=$FAIL_ON)"
-            echo "Exit code: \`$(cat live-check.status 2>/dev/null || echo n/a)\`"
+            echo
+            echo "<details><summary>live-check log</summary>"
+            echo
             echo '```'
-            tail -n 40 live-check.log
+            tail -n 40 live-check.log 2>/dev/null
             echo '```'
+            echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
