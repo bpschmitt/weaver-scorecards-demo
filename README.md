@@ -32,7 +32,7 @@ flowchart LR
 ## What's in here
 
 ```
-registry/                     The contract: manifest (pins OTel semconv v1.45.0), Acme attributes, signals, event
+registry/                     The contract: manifest (pins OTel semconv v1.42.0), Acme attributes, signals, event
 policies/registry/acme.rego   House rules for `weaver registry check`
 policies/live_check/          Live-check advisors: Weaver's default OTel advice (vendored) + PII-in-values check
 templates/registry/python/    Weaver codegen templates -> services/checkout/acme_semconv/
@@ -150,7 +150,7 @@ filtered out of `not_stable` advice in `.weaver.toml`.
   so every reporting service gets a row and scores 1, instead of disappearing as "not evaluated".
 - **Sample the live-check tap.** `probabilistic_sampler/weaver` is set to 100% for a fast demo. In
   a real staging environment, send live-check a slice.
-- **Pinned versions:** Weaver v0.28.0, semantic conventions v1.45.0, Collector contrib 0.164.0,
+- **Pinned versions:** Weaver v0.28.0, semantic conventions v1.42.0, Collector contrib 0.164.0,
   OpenTelemetry Python 1.45 / 0.66b. Bump deliberately; `make diff` shows the impact.
 
 ## Troubleshooting
@@ -160,7 +160,7 @@ filtered out of `not_stable` advice in `.weaver.toml`.
 | No data in New Relic | `docker compose logs collector` for 401/403 (license key) or 404 (endpoint). |
 | Findings attached to `weaver` | The re-key processors in `collector/config.yaml`; query 3 in `verify.nrql`. |
 | Rules 4-5 show "not evaluated" for a service | Query 4 in `verify.nrql`: findings need `entity.guid`. |
-| Weaver container exits on start | It downloads semconv v1.45.0 from GitHub on startup; check outbound access. |
+| Weaver container exits on start | It downloads semconv v1.42.0 from GitHub on startup; check outbound access. |
 | `missing_attribute` on checkout | Something new is emitted; add a `ref` to an `acme.refs.*` group and `make generate`. |
 
 ## Cleaning up

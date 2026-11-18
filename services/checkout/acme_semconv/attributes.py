@@ -32,62 +32,94 @@ ACME_TEAM = "acme.team"
 """Owning team slug; used to roll Scorecard results up by team."""
 
 CLIENT_ADDRESS = "client.address"
-"""Upstream OpenTelemetry attribute `client.address`."""
+"""Client address - domain name if available without reverse DNS lookup; otherwise, IP address or Unix domain socket name."""
 
 CLIENT_PORT = "client.port"
-"""Upstream OpenTelemetry attribute `client.port`."""
+"""Client port number."""
 
 DEPLOYMENT_ENVIRONMENT_NAME = "deployment.environment.name"
-"""Upstream OpenTelemetry attribute `deployment.environment.name`."""
+"""Name of the [deployment environment](https://wikipedia.org/wiki/Deployment_environment) (aka deployment tier)."""
+DEPLOYMENT_ENVIRONMENT_NAME_PRODUCTION = "production"
+DEPLOYMENT_ENVIRONMENT_NAME_STAGING = "staging"
+DEPLOYMENT_ENVIRONMENT_NAME_TEST = "test"
+DEPLOYMENT_ENVIRONMENT_NAME_DEVELOPMENT = "development"
+DEPLOYMENT_ENVIRONMENT_NAME_VALUES = ("production", "staging", "test", "development", )
 
 ERROR_TYPE = "error.type"
-"""Upstream OpenTelemetry attribute `error.type`."""
+"""Describes a class of error the operation ended with."""
+ERROR_TYPE_OTHER = "_OTHER"
+ERROR_TYPE_VALUES = ("_OTHER", )
 
 HTTP_REQUEST_METHOD = "http.request.method"
-"""Upstream OpenTelemetry attribute `http.request.method`."""
+"""HTTP request method."""
+HTTP_REQUEST_METHOD_CONNECT = "CONNECT"
+HTTP_REQUEST_METHOD_DELETE = "DELETE"
+HTTP_REQUEST_METHOD_GET = "GET"
+HTTP_REQUEST_METHOD_HEAD = "HEAD"
+HTTP_REQUEST_METHOD_OPTIONS = "OPTIONS"
+HTTP_REQUEST_METHOD_PATCH = "PATCH"
+HTTP_REQUEST_METHOD_POST = "POST"
+HTTP_REQUEST_METHOD_PUT = "PUT"
+HTTP_REQUEST_METHOD_TRACE = "TRACE"
+HTTP_REQUEST_METHOD_QUERY = "QUERY"
+HTTP_REQUEST_METHOD_OTHER = "_OTHER"
+HTTP_REQUEST_METHOD_VALUES = ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "TRACE", "QUERY", "_OTHER", )
 
 HTTP_RESPONSE_STATUS_CODE = "http.response.status_code"
-"""Upstream OpenTelemetry attribute `http.response.status_code`."""
+"""[HTTP response status code](https://tools.ietf.org/html/rfc7231#section-6)."""
 
 HTTP_ROUTE = "http.route"
-"""Upstream OpenTelemetry attribute `http.route`."""
+"""The matched route template for the request. This MUST be low-cardinality and include all static path segments, with dynamic path segments represented with placeholders."""
 
 NETWORK_PROTOCOL_VERSION = "network.protocol.version"
-"""Upstream OpenTelemetry attribute `network.protocol.version`."""
+"""The actual version of the protocol used for network communication."""
 
 SERVER_ADDRESS = "server.address"
-"""Upstream OpenTelemetry attribute `server.address`."""
+"""Server domain name if available without reverse DNS lookup; otherwise, IP address or Unix domain socket name."""
 
 SERVER_PORT = "server.port"
-"""Upstream OpenTelemetry attribute `server.port`."""
+"""Server port number."""
 
 SERVICE_INSTANCE_ID = "service.instance.id"
-"""Upstream OpenTelemetry attribute `service.instance.id`."""
+"""The string ID of the service instance."""
 
 SERVICE_NAME = "service.name"
-"""Upstream OpenTelemetry attribute `service.name`."""
+"""Logical name of the service."""
 
 SERVICE_VERSION = "service.version"
-"""Upstream OpenTelemetry attribute `service.version`."""
+"""The version string of the service component. The format is not defined by these conventions."""
 
 TELEMETRY_SDK_LANGUAGE = "telemetry.sdk.language"
-"""Upstream OpenTelemetry attribute `telemetry.sdk.language`."""
+"""The language of the telemetry SDK."""
+TELEMETRY_SDK_LANGUAGE_CPP = "cpp"
+TELEMETRY_SDK_LANGUAGE_DOTNET = "dotnet"
+TELEMETRY_SDK_LANGUAGE_ERLANG = "erlang"
+TELEMETRY_SDK_LANGUAGE_GO = "go"
+TELEMETRY_SDK_LANGUAGE_JAVA = "java"
+TELEMETRY_SDK_LANGUAGE_NODEJS = "nodejs"
+TELEMETRY_SDK_LANGUAGE_PHP = "php"
+TELEMETRY_SDK_LANGUAGE_PYTHON = "python"
+TELEMETRY_SDK_LANGUAGE_RUBY = "ruby"
+TELEMETRY_SDK_LANGUAGE_RUST = "rust"
+TELEMETRY_SDK_LANGUAGE_SWIFT = "swift"
+TELEMETRY_SDK_LANGUAGE_WEBJS = "webjs"
+TELEMETRY_SDK_LANGUAGE_VALUES = ("cpp", "dotnet", "erlang", "go", "java", "nodejs", "php", "python", "ruby", "rust", "swift", "webjs", )
 
 TELEMETRY_SDK_NAME = "telemetry.sdk.name"
-"""Upstream OpenTelemetry attribute `telemetry.sdk.name`."""
+"""The name of the telemetry SDK as defined above."""
 
 TELEMETRY_SDK_VERSION = "telemetry.sdk.version"
-"""Upstream OpenTelemetry attribute `telemetry.sdk.version`."""
+"""The version string of the telemetry SDK."""
 
 URL_PATH = "url.path"
-"""Upstream OpenTelemetry attribute `url.path`."""
+"""The [URI path](https://www.rfc-editor.org/rfc/rfc3986#section-3.3) component"""
 
 URL_QUERY = "url.query"
-"""Upstream OpenTelemetry attribute `url.query`."""
+"""The [URI query](https://www.rfc-editor.org/rfc/rfc3986#section-3.4) component"""
 
 URL_SCHEME = "url.scheme"
-"""Upstream OpenTelemetry attribute `url.scheme`."""
+"""The [URI scheme](https://www.rfc-editor.org/rfc/rfc3986#section-3.1) component identifying the used protocol."""
 
 USER_AGENT_ORIGINAL = "user_agent.original"
-"""Upstream OpenTelemetry attribute `user_agent.original`."""
+"""Value of the [HTTP User-Agent](https://www.rfc-editor.org/rfc/rfc9110.html#field.user-agent) header sent by the client."""
 

@@ -58,7 +58,7 @@ services:
     depends_on: [weaver]
 
   # Continuous live-check: the "staging gate". Downloads semantic conventions
-  # v1.45.0 from GitHub on startup (the registry's pinned dependency).
+  # v1.42.0 from GitHub on startup (the registry's pinned dependency).
   weaver:
     image: otel/weaver:v0.28.0
     # Project mounted read-only; Weaver keeps its writable working dir (and any
