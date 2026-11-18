@@ -72,17 +72,21 @@ jobs:
       - name: Start live-check
         run: |
           mkdir -p live-check-report
-          weaver registry live-check \
-            --config=.weaver.toml \
-            --registry=registry \
-            --advice-policies=policies/live_check \
-            --otlp-grpc-address=127.0.0.1 --otlp-grpc-port=4317 \
-            --admin-port=4320 \
-            --inactivity-timeout=120 \
-            --format=json --output=live-check-report \
-            --fail-on="$FAIL_ON" \
-            > live-check.log 2>&1 &
-          echo $! > live-check.pid
+          # Each step is its own shell, so a later step can't `wait` on this
+          # process. The wrapper records Weaver's real exit code in a file instead.
+          (
+            set +e
+            weaver registry live-check \
+              --config=.weaver.toml \
+              --registry=registry \
+              --advice-policies=policies/live_check \
+              --otlp-grpc-address=127.0.0.1 --otlp-grpc-port=4317 \
+              --admin-port=4320 \
+              --inactivity-timeout=120 \
+              --format=json --output=live-check-report \
+              --fail-on="$FAIL_ON"
+            echo $? > live-check.exit
+          ) > live-check.log 2>&1 &
           for i in $(seq 1 60); do
             curl -sf http://127.0.0.1:4320/health && break
             sleep 2
@@ -118,7 +122,12 @@ jobs:
           sleep 3
           curl -s -X POST http://127.0.0.1:4320/stop || true
           # Weaver exits non-zero when findings reach FAIL_ON; that is the gate.
-          if wait "$(cat live-check.pid)"; then status=0; else status=$?; fi
+          # Wait for the wrapper to record the exit code (124 = never finished).
+          for i in $(seq 1 60); do
+            [ -f live-check.exit ] && break
+            sleep 1
+          done
+          status=$(cat live-check.exit 2>/dev/null || echo 124)
           echo "live-check exit code: $status"
           echo "$status" > live-check.status
 
