@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import sys
 from collections import Counter
 
@@ -23,19 +24,47 @@ ANNOTATION = {"violation": "error", "improvement": "warning"}
 MAX_ANNOTATIONS = 10  # GitHub shows only the first 10 per step
 
 
-def walk_advice(node):
-    """Yield (advice, sample_name) for every advice entry in the report."""
+ANSI = re.compile(r"\x1b\[[0-9;]*m|\\u\{1b\}\[[0-9;]*m")
+
+
+def label_for(kind: str, sample: dict) -> str:
+    """Human name of the signal a finding belongs to."""
+    if kind == "resource":
+        for attr in sample.get("attributes") or []:
+            if attr.get("name") == "service.name":
+                return str(attr.get("value"))
+        return "(resource)"
+    if kind == "log":
+        text = sample.get("event_name") or ANSI.sub("", str(sample.get("body") or ""))
+        text = re.sub(r'^StringValue\("|"\)$', "", text).strip()
+        return (text[:60] + "...") if len(text) > 60 else (text or "(log record)")
+    return str(sample.get("name") or f"({kind})")
+
+
+def walk_advice(node, kind="", label=""):
+    """Yield (advice, kind, label) for every advice entry, with its parent signal."""
     if isinstance(node, dict):
         result = node.get("live_check_result")
         if isinstance(result, dict):
-            name = node.get("name") or node.get("metric_name") or node.get("event_name")
             for advice in result.get("all_advice") or []:
-                yield advice, name
-        for value in node.values():
-            yield from walk_advice(value)
+                yield advice, kind, label
+        for key, value in node.items():
+            if key == "span_events" and isinstance(value, list):
+                for event in value:
+                    yield from walk_advice(event, "span_event", f"{label} > {event.get('name')}")
+            else:
+                yield from walk_advice(value, kind, label)
     elif isinstance(node, list):
         for item in node:
-            yield from walk_advice(item)
+            yield from walk_advice(item, kind, label)
+
+
+def walk_samples(samples):
+    """Top-level samples are single-key dicts: {"metric": {...}}, {"span": {...}}, ..."""
+    for sample in samples:
+        for kind, body in sample.items():
+            if isinstance(body, dict):
+                yield from walk_advice(body, kind, label_for(kind, body))
 
 
 def escape(text: str) -> str:
@@ -61,15 +90,12 @@ def main() -> None:
         return
 
     data = json.loads(report.read_text())
-    # (level, id, message, signal_type) -> count and example sample names
+    # (level, id, message, where) -> count; `where` = "<signal kind> <signal name>"
     counts: Counter = Counter()
-    samples: dict[tuple, set] = {}
-    for advice, name in walk_advice(data.get("samples", [])):
-        key = (advice.get("level", "information"), advice.get("id", "?"),
-               advice.get("message", ""), advice.get("signal_type") or "")
-        counts[key] += 1
-        if name:
-            samples.setdefault(key, set()).add(name)
+    for advice, kind, label in walk_samples(data.get("samples", [])):
+        where = f"{kind} {label}".strip()
+        counts[(advice.get("level", "information"), advice.get("id", "?"),
+                advice.get("message", ""), where)] += 1
 
     by_level = Counter()
     for (level, *_), n in counts.items():
@@ -79,7 +105,7 @@ def main() -> None:
 
     def rows_for(level):
         return sorted(((k, n) for k, n in counts.items() if k[0] == level),
-                      key=lambda kn: (kn[0][1], kn[0][2]))
+                      key=lambda kn: (kn[0][1], kn[0][2], kn[0][3]))
 
     # information is noise: counted above, not listed.
     for level in LEVELS[:2]:
@@ -87,9 +113,9 @@ def main() -> None:
         if not rows:
             continue
         out += [f"#### {level.capitalize()} ({len(rows)} distinct, {by_level[level]} total)", "",
-                "| Advice | Signal | Weaver says | Seen |", "| --- | --- | --- | --- |"]
-        out += [f"| `{advice_id}` | {md(signal)} | {md(message)} | {n}x |"
-                for (_, advice_id, message, signal), n in rows]
+                "| Advice | Where | Weaver says | Seen |", "| --- | --- | --- | --- |"]
+        out += [f"| `{advice_id}` | `{md(where)}` | {md(message)} | {n}x |"
+                for (_, advice_id, message, where), n in rows]
         out.append("")
     if by_level["violation"] == by_level["improvement"] == 0:
         out.append("No violations or improvements. Weaver has no suggestions.")
@@ -100,11 +126,11 @@ def main() -> None:
         rows = rows_for(level)
         if rows:
             print(f"== {level.upper()} ({by_level[level]}) ==")
-        for (lv, advice_id, message, signal), n in rows:
-            print(f"[{lv}] {advice_id} ({signal or 'n/a'}, {n}x): {message}")
+        for (lv, advice_id, message, where), n in rows:
+            print(f"[{lv}] {advice_id} in {where} ({n}x): {message}")
             if annotations < MAX_ANNOTATIONS:
                 print(f"::{ANNOTATION[lv]} title=Weaver {lv}: {escape(advice_id)} "
-                      f"({escape(service)})::{escape(message)}")
+                      f"({escape(service)})::{escape(message)} [{escape(where)}]")
                 annotations += 1
     if by_level["violation"] == by_level["improvement"] == 0:
         print("No violations or improvements.")
